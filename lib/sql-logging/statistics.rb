@@ -81,7 +81,7 @@ module SqlLogging
           query.log_query(ntuples || 0, bytes || 0, msec)
         end
 
-        logger.info({ name: name, sql: sql, rows: ntuples, btyes: byes })
+        logger.info({ name: name, sql: sql, rows: ntuples, btyes: bytes })
       end
     end
   
