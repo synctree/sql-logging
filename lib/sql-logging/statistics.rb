@@ -1,5 +1,6 @@
 require 'singleton'
 require 'sql-logging/logged_query'
+require 'logger'
 
 module SqlLogging
   class Helper
@@ -13,7 +14,13 @@ module SqlLogging
     @@show_top_sql_queries = :total_time
     @@top_sql_queries = 10
   
-    cattr_accessor :show_sql_backtrace, :top_sql_queries
+    cattr_accessor :show_sql_backtrace, :top_sql_queries, :logger
+
+    self.logger = if defined?(Rails)
+      Rails.logger
+    elsif defined?(RAILS_DEFAULT_LOGGER)
+      RAILS_DEFAULT_LOGGER
+    end
   
     def self.show_top_sql_queries
       @@show_top_sql_queries
@@ -74,20 +81,20 @@ module SqlLogging
           query.log_query(ntuples || 0, bytes || 0, msec)
         end
 
-        Rails.logger.debug "    #{helper.pluralize(ntuples, 'row')}, #{helper.number_to_human_size(bytes)}"
-        Rails.logger.debug "    #{backtrace}" if @@show_sql_backtrace
+        logger.debug "    #{helper.pluralize(ntuples, 'row')}, #{helper.number_to_human_size(bytes)}"
+        logger.debug "    #{backtrace}" if @@show_sql_backtrace
       end
     end
   
     def self.log_report
-      Rails.logger.debug "SQL Logging: #{helper.pluralize(@@queries, 'statement')} executed, returning #{helper.number_to_human_size(@@bytes)}"
+      logger.debug "SQL Logging: #{helper.pluralize(@@queries, 'statement')} executed, returning #{helper.number_to_human_size(@@bytes)}"
     
       unless @@show_top_sql_queries == false || @@top_queries.empty?
-        Rails.logger.debug "Top #{@@top_sql_queries} SQL executions:"
+        logger.debug "Top #{@@top_sql_queries} SQL executions:"
         sorted_keys = @@top_queries.keys.sort_by { |k| @@top_queries[k][@@show_top_sql_queries] }.reverse
         sorted_keys.slice(0..@@top_sql_queries).each do |key|
           query = @@top_queries[key]
-          Rails.logger.debug "  Executed #{helper.pluralize(query.queries, 'time')} in #{'%.1f' % query.total_time}ms " +
+          logger.debug "  Executed #{helper.pluralize(query.queries, 'time')} in #{'%.1f' % query.total_time}ms " +
             "(#{'%.1f' % query.min_time}/#{'%.1f' % query.median_time}/#{'%.1f' % query.max_time}ms min/median/max), " +
             "returning #{helper.pluralize(query.rows, 'row')} " +
             "(#{helper.number_to_human_size(query.bytes)}):\n" +
