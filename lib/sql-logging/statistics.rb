@@ -81,6 +81,8 @@ module SqlLogging
           query.log_query(ntuples || 0, bytes || 0, msec)
         end
 
+        logger.debug "    #{name}"
+        logger.debug "    #{sql}"
         logger.debug "    #{helper.pluralize(ntuples, 'row')}, #{helper.number_to_human_size(bytes)}"
         logger.debug "    #{backtrace}" if @@show_sql_backtrace
       end
